@@ -5,21 +5,30 @@ defmodule TeslaHTTPCache do
 
   @behaviour Tesla.Middleware
 
+  @default_opts [auto_accept_encoding: true, auto_compress: true, type: :private]
+
   defmodule InvalidBodyError do
     defexception [:message]
 
     @impl true
-    def message(_), do: """
-    TeslaHTTPCache received invalid body. Body must be `iodata()` or `nil`
+    def message(_),
+      do: """
+      TeslaHTTPCache received invalid body. Body must be `iodata()` or `nil`
 
-    For requests, body must be encoded before calling this middleware (for
-    example encoded to JSON) and for responses, the body must be decoded
-    after (for instance, decoded to Elixir from a JSON string).
-    """
+      For requests, body must be encoded before calling this middleware (for
+      example encoded to JSON) and for responses, the body must be decoded
+      after (for instance, decoded to Elixir from a JSON string).
+      """
   end
 
   @impl true
   def call(env, next, opts) do
+    opts = init_opts(opts)
+
+    do_call(env, next, opts)
+  end
+
+  defp do_call(env, next, opts) do
     request = to_http_cache_request(env)
 
     case :http_cache.get(request, opts) do
@@ -35,8 +44,10 @@ defmodule TeslaHTTPCache do
       :miss ->
         :telemetry.execute([:tesla_http_cache, :miss], %{})
 
+        request_time = now()
+
         with {:ok, env} <- Tesla.run(env, next) do
-          {:ok, cache_new_response(request, env, opts)}
+          {:ok, cache_new_response(request, env, Keyword.put(opts, :request_time, request_time))}
         end
     end
   rescue
@@ -54,6 +65,8 @@ defmodule TeslaHTTPCache do
          next,
          opts
        ) do
+    request_time = now()
+
     env
     |> add_validator(cached_headers, "last-modified", "if-modified-since")
     |> add_validator(cached_headers, "etag", "if-none-match")
@@ -62,7 +75,13 @@ defmodule TeslaHTTPCache do
       {:ok, %Tesla.Env{status: 304} = env} ->
         :telemetry.execute([:tesla_http_cache, :hit], %{}, %{freshness: :revalidated})
 
-        {:ok, cache_revalidated_response(request, env, revalidated_response, opts)}
+        {:ok,
+         cache_revalidated_response(
+           request,
+           env,
+           revalidated_response,
+           Keyword.put(opts, :request_time, request_time)
+         )}
 
       {:ok, env} ->
         :telemetry.execute([:tesla_http_cache, :miss], %{})
@@ -137,7 +156,7 @@ defmodule TeslaHTTPCache do
       {:ok, content} = :file.pread(file, offset, length)
       %Tesla.Env{env | status: status, headers: resp_headers, body: content}
     after
-        File.close(file)
+      File.close(file)
     end
   end
 
@@ -156,4 +175,12 @@ defmodule TeslaHTTPCache do
         env
     end
   end
+
+  defp init_opts(opts) do
+    unless opts[:store], do: raise("Missing `store` http_cache option")
+
+    Keyword.merge(@default_opts, opts)
+  end
+
+  defp now(), do: :os.system_time(:second)
 end
