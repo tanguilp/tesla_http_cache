@@ -20,6 +20,8 @@ defmodule TeslaHTTPCache do
         revalidate(request, response, env, next, opts)
 
       :miss ->
+        :telemetry.execute([:tesla_http_cache, :miss], %{})
+
         with {:ok, env} <- Tesla.run(env, next) do
           {:ok, cache_new_response(request, env, opts)}
         end
@@ -39,9 +41,13 @@ defmodule TeslaHTTPCache do
     |> Tesla.run(next)
     |> case do
       {:ok, %Tesla.Env{status: 304} = env} ->
+        :telemetry.execute([:tesla_http_cache, :hit], %{}, %{freshness: :revalidated})
+
         {:ok, cache_revalidated_response(request, env, revalidated_response, opts)}
 
       {:ok, env} ->
+        :telemetry.execute([:tesla_http_cache, :miss], %{})
+
         {:ok, cache_new_response(request, env, opts)}
 
       {:error, _} = error ->
@@ -49,9 +55,9 @@ defmodule TeslaHTTPCache do
     end
   end
 
-  # handle 504/not_found case
-  defp return_cached_response({_, {response_ref, response}}, env, opts) do
+  defp return_cached_response({freshness, {response_ref, response}}, env, opts) do
     :http_cache.notify_response_used(response_ref, opts)
+    :telemetry.execute([:tesla_http_cache, :hit], %{}, %{freshness: freshness})
 
     {:ok, to_tesla_response(env, response)}
   end
