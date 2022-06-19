@@ -98,9 +98,25 @@ defmodule TeslaHTTPCache do
     end
   end
 
-  # TODO: handle :sendfile
+  defp to_tesla_response(env, {status, resp_headers, {:sendfile, offset, :all, path}}) do
+    file_size = File.stat!(path).size
+
+    to_tesla_response(env, {status, resp_headers, {:sendfile, offset, file_size, path}})
+  end
+
+  defp to_tesla_response(env, {status, resp_headers, {:sendfile, offset, length, path}}) do
+    file = File.open!(path, [:read, :raw, :binary])
+
+    try do
+      {:ok, content} = :file.pread(file, offset, length)
+      %Tesla.Env{env | status: status, headers: resp_headers, body: content}
+    after
+        File.close(file)
+    end
+  end
+
   defp to_tesla_response(env, {status, resp_headers, body}) do
-    %Tesla.Env{env | status: status, headers: resp_headers, body: body}
+    %Tesla.Env{env | status: status, headers: resp_headers, body: :erlang.iolist_to_binary(body)}
   end
 
   defp add_validator(env, cached_headers, validator, condition_header) do
