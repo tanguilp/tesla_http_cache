@@ -5,6 +5,19 @@ defmodule TeslaHTTPCache do
 
   @behaviour Tesla.Middleware
 
+  defmodule InvalidBodyError do
+    defexception [:message]
+
+    @impl true
+    def message(_), do: """
+    TeslaHTTPCache received invalid body. Body must be `iodata()` or `nil`
+
+    For requests, body must be encoded before calling this middleware (for
+    example encoded to JSON) and for responses, the body must be decoded
+    after (for instance, decoded to Elixir from a JSON string).
+    """
+  end
+
   @impl true
   def call(env, next, opts) do
     request = to_http_cache_request(env)
@@ -26,6 +39,12 @@ defmodule TeslaHTTPCache do
           {:ok, cache_new_response(request, env, opts)}
         end
     end
+  rescue
+    e in InvalidBodyError ->
+      raise e
+
+    _ ->
+      Tesla.run(env, next)
   end
 
   defp revalidate(
@@ -71,11 +90,18 @@ defmodule TeslaHTTPCache do
     }
   rescue
     _ ->
-      raise "body must be IO data"
+      raise %__MODULE__.InvalidBodyError{}
   end
 
   defp to_http_cache_response(env) do
-    {env.status, env.headers, env.body}
+    {
+      env.status,
+      env.headers,
+      (env.body || "") |> :erlang.iolist_to_binary()
+    }
+  rescue
+    _ ->
+      raise %__MODULE__.InvalidBodyError{}
   end
 
   defp cache_new_response(request, env, opts) do
