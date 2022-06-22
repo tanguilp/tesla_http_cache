@@ -46,8 +46,25 @@ defmodule TeslaHTTPCache do
 
         request_time = now()
 
-        with {:ok, env} <- Tesla.run(env, next) do
-          {:ok, cache_new_response(request, env, Keyword.put(opts, :request_time, request_time))}
+        case Tesla.run(env, next) do
+          {:ok, env} ->
+            {:ok,
+             cache_new_response(request, env, Keyword.put(opts, :request_time, request_time))}
+
+          {:error, reason} = error ->
+            if origin_unreachable?(reason) do
+              opts = Keyword.put(opts, :origin_unreachable, true)
+
+              case :http_cache.get(request, opts) do
+                {:stale, _} = response ->
+                  return_cached_response(response, env, opts)
+
+                _ ->
+                  error
+              end
+            else
+              error
+            end
         end
     end
   rescue
@@ -175,6 +192,16 @@ defmodule TeslaHTTPCache do
         env
     end
   end
+
+  # Erlang httpc
+  defp origin_unreachable?(:econnrefused), do: true
+  # Gun & hackney
+  defp origin_unreachable?(:timeout), do: true
+  # ibrowse
+  defp origin_unreachable?(:nxdomain), do: true
+  # Mint & Finch
+  defp origin_unreachable?(%{__exception__: true, __struct__: Mint.TransportError}), do: false
+  defp origin_unreachable?(_), do: false
 
   defp init_opts(opts) do
     unless opts[:store], do: raise("Missing `store` http_cache option")
