@@ -51,20 +51,8 @@ defmodule TeslaHTTPCache do
             {:ok,
              cache_new_response(request, env, Keyword.put(opts, :request_time, request_time))}
 
-          {:error, reason} = error ->
-            if origin_unreachable?(reason) do
-              opts = Keyword.put(opts, :origin_unreachable, true)
-
-              case :http_cache.get(request, opts) do
-                {:stale, _} = response ->
-                  return_cached_response(response, env, opts)
-
-                _ ->
-                  error
-              end
-            else
-              error
-            end
+          {:error, _} = error ->
+            handle_request_failure(request, error, env, opts)
         end
     end
   rescue
@@ -73,6 +61,25 @@ defmodule TeslaHTTPCache do
 
     _ ->
       Tesla.run(env, next)
+  end
+
+  defp handle_request_failure(request, {:error, reason} = error, env, opts) do
+    if origin_unreachable?(reason) do
+      opts = Keyword.put(opts, :origin_unreachable, true)
+
+      case :http_cache.get(request, opts) do
+        {:fresh, _} = response ->
+          return_cached_response(response, env, opts)
+
+        {:stale, _} = response ->
+          return_cached_response(response, env, opts)
+
+        _ ->
+          error
+      end
+    else
+      error
+    end
   end
 
   defp revalidate(
@@ -106,7 +113,7 @@ defmodule TeslaHTTPCache do
         {:ok, cache_new_response(request, env, opts)}
 
       {:error, _} = error ->
-        error
+        handle_request_failure(request, error, env, opts)
     end
   end
 
