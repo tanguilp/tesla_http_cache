@@ -115,7 +115,7 @@ defmodule TeslaHTTPCache do
            opts
          ) do
       {:ok, http_cache_resp} ->
-        to_tesla_response(resp_env, http_cache_resp)
+        {:ok, to_tesla_response(resp_env, http_cache_resp)}
 
       :not_cacheable ->
         {:ok, resp_env}
@@ -131,7 +131,7 @@ defmodule TeslaHTTPCache do
        ) do
     case :http_cache.cache(http_cache_req, to_http_cache_response(resp_env), opts) do
       {:ok, http_cache_resp} ->
-        to_tesla_response(resp_env, http_cache_resp)
+        {:ok, to_tesla_response(resp_env, http_cache_resp)}
 
       :not_cacheable ->
         {:ok, resp_env}
