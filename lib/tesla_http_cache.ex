@@ -1,6 +1,8 @@
 defmodule TeslaHTTPCache do
   @moduledoc """
-  Documentation for `TeslaHTTPCache`.
+  Middleware implementation
+
+  Refer to the README for more information.
   """
 
   @behaviour Tesla.Middleware
@@ -9,6 +11,10 @@ defmodule TeslaHTTPCache do
   @stale_if_error_status [500, 502, 503, 504]
 
   defmodule InvalidBodyError do
+    @moduledoc """
+    Error raised when a downstream middleware returns a non-binary and non-IOlist response body
+    """
+
     defexception [:message]
 
     @impl true
