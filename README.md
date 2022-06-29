@@ -168,9 +168,9 @@ iex> Tesla.get!(client, "http://perdu.com", headers: [{"cache-control", "no-cach
 
 The following events are emitted:
 - `[:tesla_http_cache, :hit]` when a response is returned from the cache
-  - measurments: none
+  - measurements: none
   - metadata:
-    -`:freshness`: one of
+    - `:freshness`: one of
       - `:fresh`: a fresh response was returned
       - `:stale`: a stale response was returned
       - `:revalidated`: the response was successfully revalidated and returned
