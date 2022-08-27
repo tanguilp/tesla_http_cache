@@ -2,8 +2,6 @@
 
 HTTP caching middleware for Tesla
 
-⚠️ work in progress ⚠️
-
 ## Installation
 
 ```elixir
