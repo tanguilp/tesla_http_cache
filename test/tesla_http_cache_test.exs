@@ -1,7 +1,7 @@
 defmodule TeslaHTTPCacheTest do
   use ExUnit.Case
 
-  @http_cache_opts [type: :private, store: :http_cache_store_process]
+  @http_cache_opts %{type: :private, store: :http_cache_store_process}
   @test_url "http://no-exist-domain-adsxikfgjs.com"
   @test_req {"GET", @test_url, [], ""}
   @test_resp {200, [], "Some content"}
@@ -35,7 +35,10 @@ defmodule TeslaHTTPCacheTest do
 
   setup do
     client =
-      Tesla.client([{TeslaHTTPCache, [store: :http_cache_store_process]}], __MODULE__.EchoAdapter)
+      Tesla.client(
+        [{TeslaHTTPCache, %{store: :http_cache_store_process}}],
+        __MODULE__.EchoAdapter
+      )
 
     {:ok, client: client}
   end
@@ -75,7 +78,7 @@ defmodule TeslaHTTPCacheTest do
   test "returns cached response when cache is disconnected" do
     client =
       Tesla.client(
-        [{TeslaHTTPCache, [store: :http_cache_store_process]}],
+        [{TeslaHTTPCache, %{store: :http_cache_store_process}}],
         __MODULE__.UnreachableHostAdapter
       )
 
@@ -97,7 +100,7 @@ defmodule TeslaHTTPCacheTest do
     test "returns cached response when origin returns a #{http_status} error" do
       client =
         Tesla.client(
-          [{TeslaHTTPCache, [store: :http_cache_store_process]}],
+          [{TeslaHTTPCache, %{store: :http_cache_store_process}}],
           {__MODULE__.OriginErrorAdapter, unquote(http_status)}
         )
 
@@ -117,7 +120,7 @@ defmodule TeslaHTTPCacheTest do
   end
 
   test "raises when store option is missing" do
-    client = Tesla.client([{TeslaHTTPCache, []}])
+    client = Tesla.client([{TeslaHTTPCache, {}}])
 
     assert_raise RuntimeError, fn -> Tesla.get(client, @test_url) end
   end

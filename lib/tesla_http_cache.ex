@@ -7,7 +7,7 @@ defmodule TeslaHTTPCache do
 
   @behaviour Tesla.Middleware
 
-  @default_opts [auto_accept_encoding: true, auto_compress: true, type: :private]
+  @default_opts %{auto_accept_encoding: true, auto_compress: true, type: :private}
   @stale_if_error_status [500, 502, 503, 504]
 
   defmodule InvalidBodyError do
@@ -51,7 +51,7 @@ defmodule TeslaHTTPCache do
       :miss ->
         :telemetry.execute([:tesla_http_cache, :miss], %{})
 
-        opts = Keyword.put(opts, :request_time, now())
+        opts = Map.put(opts, :request_time, now())
 
         env
         |> Tesla.run(next)
@@ -72,7 +72,7 @@ defmodule TeslaHTTPCache do
          next,
          opts
        ) do
-    opts = Keyword.put(opts, :request_time, now())
+    opts = Map.put(opts, :request_time, now())
 
     env
     |> add_validator(cached_headers, "last-modified", "if-modified-since")
@@ -91,7 +91,7 @@ defmodule TeslaHTTPCache do
          opts
        )
        when status in @stale_if_error_status do
-    opts = Keyword.put(opts, :allow_stale_if_error, true)
+    opts = Map.put(opts, :allow_stale_if_error, true)
 
     case :http_cache.get(http_cache_req, opts) do
       {:fresh, _} = http_cache_resp ->
@@ -152,7 +152,7 @@ defmodule TeslaHTTPCache do
          opts
        ) do
     if origin_unreachable?(reason) do
-      opts = Keyword.put(opts, :origin_unreachable, true)
+      opts = Map.put(opts, :origin_unreachable, true)
 
       case :http_cache.get(http_cache_req, opts) do
         {:fresh, _} = http_cache_resp ->
@@ -242,10 +242,12 @@ defmodule TeslaHTTPCache do
   defp origin_unreachable?(%{__exception__: true, __struct__: Mint.TransportError}), do: false
   defp origin_unreachable?(_), do: false
 
-  defp init_opts(opts) do
-    unless opts[:store], do: raise("Missing `store` http_cache option")
+  defp init_opts(%{store: _} = opts) do
+    Map.merge(@default_opts, opts)
+  end
 
-    Keyword.merge(@default_opts, opts)
+  defp init_opts(_) do
+    raise("Missing `store` http_cache option")
   end
 
   defp now(), do: :os.system_time(:second)

@@ -31,135 +31,153 @@ The `:store` option must be set when configuring the middleware.
 Notice the `age` response header after the first request.
 
 ```elixir
-iex> client = Tesla.client([{TeslaHTTPCache, store: :http_cache_store_process}])
+iex> client = Tesla.client([{TeslaHTTPCache, %{store: :http_cache_store_process}}])
 %Tesla.Client{
-  adapter: nil,
   fun: nil,
+  pre: [{TeslaHTTPCache, :call, [%{store: :http_cache_store_process}]}],
   post: [],
-  pre: [{TeslaHTTPCache, :call, [[store: :http_cache_store_process]]}]
+  adapter: nil
 }
-
 iex> Tesla.get!(client, "http://perdu.com")
 %Tesla.Env{
-  __client__: %Tesla.Client{
-    adapter: nil,
-    fun: nil,
-    post: [],
-    pre: [{TeslaHTTPCache, :call, [[store: :http_cache_store_process]]}]
-  },
-  __module__: Tesla,
-  body: "<html><head><title>Vous Etes Perdu ?</title></head><body><h1>Perdu sur l'Internet ?</h1><h2>Pas de panique, on va vous aider</h2><strong><pre>    * <----- vous &ecirc;tes ici</pre></strong></body></html>\n",
+  method: :get,
+  url: "http://perdu.com",
+  query: [],
   headers: [
     {"cache-control", "max-age=600"},
-    {"date", "Wed, 29 Jun 2022 12:23:18 GMT"},
-    {"accept-ranges", "bytes"},
-    {"etag", "\"cc-5344555136fe9\""},
-    {"server", "Apache"},
+    {"date", "Sat, 22 Apr 2023 14:15:11 GMT"},
+    {"etag", "W/\"cc-5344555136fe9-gzip\""},
+    {"server", "cloudflare"},
     {"vary", "Accept-Encoding,User-Agent"},
     {"content-type", "text/html"},
-    {"expires", "Wed, 29 Jun 2022 12:33:18 GMT"},
+    {"expires", "Sat, 22 Apr 2023 14:25:11 GMT"},
     {"last-modified", "Thu, 02 Jun 2016 06:01:08 GMT"},
+    {"cf-cache-status", "DYNAMIC"},
+    {"report-to",
+     "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v3?s=OW%2BJhOzTmxq4FGquM7w7bvkDLoryGQY9elB6ajNGx6Wgw0%2BjJechCF9vurIyh1V8rJ%2F0O6KL%2B36xUILE8SICSy1o0O1%2FrR2lx0XHgsN0ZWhBXsWf81OnlHM6ITw%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}"},
+    {"nel",
+     "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}"},
+    {"cf-ray", "7bbe7a35ea419bc2-FRA"},
+    {"alt-svc", "h3=\":443\"; ma=86400, h3-29=\":443\"; ma=86400"},
     {"content-length", "204"}
   ],
-  method: :get,
-  opts: [],
-  query: [],
+  body: "<html><head><title>Vous Etes Perdu ?</title></head><body><h1>Perdu sur l'Internet ?</h1><h2>Pas de panique, on va vous aider</h2><strong><pre>    * <----- vous &ecirc;tes ici</pre></strong></body></html>\n",
   status: 200,
-  url: "http://perdu.com"
+  opts: [],
+  __module__: Tesla,
+  __client__: %Tesla.Client{
+    fun: nil,
+    pre: [{TeslaHTTPCache, :call, [%{store: :http_cache_store_process}]}],
+    post: [],
+    adapter: nil
+  }
 }
-
 iex> Tesla.get!(client, "http://perdu.com")
 %Tesla.Env{
-  __client__: %Tesla.Client{
-    adapter: nil,
-    fun: nil,
-    post: [],
-    pre: [{TeslaHTTPCache, :call, [[store: :http_cache_store_process]]}]
-  },
-  __module__: Tesla,
-  body: "<html><head><title>Vous Etes Perdu ?</title></head><body><h1>Perdu sur l'Internet ?</h1><h2>Pas de panique, on va vous aider</h2><strong><pre>    * <----- vous &ecirc;tes ici</pre></strong></body></html>\n",
+  method: :get,
+  url: "http://perdu.com",
+  query: [],
   headers: [
     {"cache-control", "max-age=600"},
-    {"date", "Wed, 29 Jun 2022 12:23:18 GMT"},
-    {"accept-ranges", "bytes"},
-    {"etag", "\"cc-5344555136fe9\""},
-    {"server", "Apache"},
+    {"date", "Sat, 22 Apr 2023 14:15:11 GMT"},
+    {"etag", "W/\"cc-5344555136fe9-gzip\""},
+    {"server", "cloudflare"},
     {"vary", "Accept-Encoding,User-Agent"},
     {"content-type", "text/html"},
-    {"expires", "Wed, 29 Jun 2022 12:33:18 GMT"},
+    {"expires", "Sat, 22 Apr 2023 14:25:11 GMT"},
     {"last-modified", "Thu, 02 Jun 2016 06:01:08 GMT"},
+    {"cf-cache-status", "DYNAMIC"},
+    {"report-to",
+     "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v3?s=OW%2BJhOzTmxq4FGquM7w7bvkDLoryGQY9elB6ajNGx6Wgw0%2BjJechCF9vurIyh1V8rJ%2F0O6KL%2B36xUILE8SICSy1o0O1%2FrR2lx0XHgsN0ZWhBXsWf81OnlHM6ITw%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}"},
+    {"nel",
+     "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}"},
+    {"cf-ray", "7bbe7a35ea419bc2-FRA"},
+    {"alt-svc", "h3=\":443\"; ma=86400, h3-29=\":443\"; ma=86400"},
     {"content-length", "204"},
-    {"age", "4"}
+    {"age", "8"}
   ],
-  method: :get,
-  opts: [],
-  query: [],
+  body: "<html><head><title>Vous Etes Perdu ?</title></head><body><h1>Perdu sur l'Internet ?</h1><h2>Pas de panique, on va vous aider</h2><strong><pre>    * <----- vous &ecirc;tes ici</pre></strong></body></html>\n",
   status: 200,
-  url: "http://perdu.com"
+  opts: [],
+  __module__: Tesla,
+  __client__: %Tesla.Client{
+    fun: nil,
+    pre: [{TeslaHTTPCache, :call, [%{store: :http_cache_store_process}]}],
+    post: [],
+    adapter: nil
+  }
 }
-
 iex> Tesla.get!(client, "http://perdu.com", headers: [{"range", "bytes=12-43"}])
 %Tesla.Env{
-  __client__: %Tesla.Client{
-    adapter: nil,
-    fun: nil,
-    post: [],
-    pre: [{TeslaHTTPCache, :call, [[store: :http_cache_store_process]]}]
-  },
-  __module__: Tesla,
-  body: "<title>Vous Etes Perdu ?</title>",
+  method: :get,
+  url: "http://perdu.com",
+  query: [],
   headers: [
     {"cache-control", "max-age=600"},
-    {"date", "Wed, 29 Jun 2022 12:23:18 GMT"},
-    {"accept-ranges", "bytes"},
-    {"etag", "\"cc-5344555136fe9\""},
-    {"server", "Apache"},
+    {"date", "Sat, 22 Apr 2023 14:15:11 GMT"},
+    {"etag", "W/\"cc-5344555136fe9-gzip\""},
+    {"server", "cloudflare"},
     {"vary", "Accept-Encoding,User-Agent"},
     {"content-type", "text/html"},
-    {"expires", "Wed, 29 Jun 2022 12:33:18 GMT"},
+    {"expires", "Sat, 22 Apr 2023 14:25:11 GMT"},
     {"last-modified", "Thu, 02 Jun 2016 06:01:08 GMT"},
+    {"cf-cache-status", "DYNAMIC"},
+    {"report-to",
+     "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v3?s=OW%2BJhOzTmxq4FGquM7w7bvkDLoryGQY9elB6ajNGx6Wgw0%2BjJechCF9vurIyh1V8rJ%2F0O6KL%2B36xUILE8SICSy1o0O1%2FrR2lx0XHgsN0ZWhBXsWf81OnlHM6ITw%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}"},
+    {"nel",
+     "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}"},
+    {"cf-ray", "7bbe7a35ea419bc2-FRA"},
+    {"alt-svc", "h3=\":443\"; ma=86400, h3-29=\":443\"; ma=86400"},
     {"content-range", "bytes 12-43/204"},
     {"content-length", "32"},
-    {"age", "125"}
+    {"age", "22"}
   ],
-  method: :get,
-  opts: [],
-  query: [],
+  body: "<title>Vous Etes Perdu ?</title>",
   status: 206,
-  url: "http://perdu.com"
+  opts: [],
+  __module__: Tesla,
+  __client__: %Tesla.Client{
+    fun: nil,
+    pre: [{TeslaHTTPCache, :call, [%{store: :http_cache_store_process}]}],
+    post: [],
+    adapter: nil
+  }
 }
-
 iex> Tesla.get!(client, "http://perdu.com", headers: [{"cache-control", "no-cache"}])
 %Tesla.Env{
-  __client__: %Tesla.Client{
-    adapter: nil,
-    fun: nil,
-    post: [],
-    pre: [{TeslaHTTPCache, :call, [[store: :http_cache_store_process]]}]
-  },
-  __module__: Tesla,
-  body: "<html><head><title>Vous Etes Perdu ?</title></head><body><h1>Perdu sur l'Internet ?</h1><h2>Pas de panique, on va vous aider</h2><strong><pre>    * <----- vous &ecirc;tes ici</pre></strong></body></html>\n",
-  headers: [
-    {"accept-ranges", "bytes"},
-    {"content-type", "text/html"},
-    {"last-modified", "Thu, 02 Jun 2016 06:01:08 GMT"},
-    {"content-length", "204"},
-    {"age", "1"},
-    {"cache-control", "max-age=600"},
-    {"connection", "Keep-Alive"},
-    {"date", "Wed, 29 Jun 2022 12:28:10 GMT"},
-    {"etag", "\"cc-5344555136fe9\""},
-    {"server", "Apache"},
-    {"vary", "User-Agent,Accept-Encoding"},
-    {"expires", "Wed, 29 Jun 2022 12:38:10 GMT"},
-    {"keep-alive", "timeout=5, max=98"}
-  ],
   method: :get,
-  opts: [],
+  url: "http://perdu.com",
   query: [],
+  headers: [
+    {"cache-control", "max-age=600"},
+    {"date", "Sat, 22 Apr 2023 14:15:46 GMT"},
+    {"etag", "W/\"cc-5344555136fe9-gzip\""},
+    {"server", "cloudflare"},
+    {"vary", "Accept-Encoding,User-Agent"},
+    {"content-type", "text/html"},
+    {"expires", "Sat, 22 Apr 2023 14:25:46 GMT"},
+    {"last-modified", "Thu, 02 Jun 2016 06:01:08 GMT"},
+    {"cf-cache-status", "DYNAMIC"},
+    {"report-to",
+     "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v3?s=3gbcT%2Bp7OxvokGPjTitRoTA9KyQOcbn6z1EG5jp2%2Frvg%2FqA%2Bi0CZgDK0O7VNSB6c5UIPsilr%2BMysTPCgi8ocxYYCsMhc82q4e7EP4nAI5zYYuJhmMGFXTeSjWMI%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}"},
+    {"nel",
+     "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}"},
+    {"cf-ray", "7bbe7b10f8619bc2-FRA"},
+    {"alt-svc", "h3=\":443\"; ma=86400, h3-29=\":443\"; ma=86400"},
+    {"content-length", "204"}
+  ],
+  body: "<html><head><title>Vous Etes Perdu ?</title></head><body><h1>Perdu sur l'Internet ?</h1><h2>Pas de panique, on va vous aider</h2><strong><pre>    * <----- vous &ecirc;tes ici</pre></strong></body></html>\n",
   status: 200,
-  url: "http://perdu.com"
+  opts: [],
+  __module__: Tesla,
+  __client__: %Tesla.Client{
+    fun: nil,
+    pre: [{TeslaHTTPCache, :call, [%{store: :http_cache_store_process}]}],
+    post: [],
+    adapter: nil
+  }
 }
+
 ```
 
 ## Telemetry events

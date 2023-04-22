@@ -28,7 +28,7 @@ defmodule TeslaHTTPCache.MixProject do
     [
       {:dialyxir, "~> 1.0", only: :dev, runtime: false},
       {:ex_doc, "~> 0.24", only: :dev, runtime: false},
-      {:http_cache, "~> 0.1.0"},
+      {:http_cache, path: "../http_cache"},
       {:telemetry, "~> 1.0"},
       {:tesla, "~> 1.4"}
     ]
