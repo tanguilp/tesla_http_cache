@@ -46,10 +46,14 @@ defmodule TeslaHTTPCache do
         return_cached_response(response, env, opts)
 
       {:must_revalidate, _} = response ->
+        :http_cache.notify_downloading(request, self(), opts)
+
         revalidate(request, response, env, next, opts)
 
       :miss ->
         :telemetry.execute([:tesla_http_cache, :miss], %{})
+
+        :http_cache.notify_downloading(request, self(), opts)
 
         opts = Map.put(opts, :request_time, now())
 
@@ -91,6 +95,11 @@ defmodule TeslaHTTPCache do
          opts
        )
        when status in @stale_if_error_status do
+    # We always cache even responses we do know are uncacheable because this can
+    # have side effects, such as invalidating or reseting request collapsing
+    http_cache_resp = to_http_cache_response(resp_env)
+    :http_cache.cache(http_cache_req, http_cache_resp, opts)
+
     opts = Map.put(opts, :allow_stale_if_error, true)
 
     case :http_cache.get(http_cache_req, opts) do
@@ -151,6 +160,8 @@ defmodule TeslaHTTPCache do
          req_env,
          opts
        ) do
+    :http_cache.cache(http_cache_req, {504, [], ""}, opts)
+
     if origin_unreachable?(reason) do
       opts = Map.put(opts, :origin_unreachable, true)
 
