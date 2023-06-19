@@ -12,9 +12,16 @@ def deps do
 end
 ```
 
-You need to setup a cache store as well for production use.
-[http_cache_store_native](https://github.com/tanguilp/http_cache_store_native) is such a
-store.
+Responses have to be stored in a separate store backend (this library does not come with one), such
+as:
+- [`http_cache_store_memory`](https://github.com/tanguilp/http_cache_store_memory): responses are
+stored in memory (ETS)
+- [`http_cache_store_disk`](https://github.com/tanguilp/http_cache_store_disk): responses are
+stored on disk. An application using the `sendfile` system call (such as
+[`plug_http_cache`](https://github.com/tanguilp/plug_http_cache)) may benefit from the kernel's
+memory caching automatically
+
+Both are cluster-aware.
 
 ## Configuration
 
