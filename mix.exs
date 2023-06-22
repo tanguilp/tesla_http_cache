@@ -5,7 +5,7 @@ defmodule TeslaHTTPCache.MixProject do
     [
       app: :tesla_http_cache,
       description: "HTTP caching middleware for Tesla",
-      version: "0.2.0",
+      version: "0.3.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -14,6 +14,7 @@ defmodule TeslaHTTPCache.MixProject do
         extras: ["README.md", "CHANGELOG.md"]
       ],
       package: package(),
+      dialyzer: [plt_add_apps: [:http_cache]],
       source_url: "https://github.com/tanguilp/tesla_http_cache"
     ]
   end
@@ -28,7 +29,7 @@ defmodule TeslaHTTPCache.MixProject do
     [
       {:dialyxir, "~> 1.0", only: :dev, runtime: false},
       {:ex_doc, "~> 0.24", only: :dev, runtime: false},
-      {:http_cache, "~> 0.2.0"},
+      {:http_cache, "~> 0.3.0", optional: true},
       {:telemetry, "~> 1.0"},
       {:tesla, "~> 1.4"}
     ]
