@@ -188,6 +188,37 @@ iex> Tesla.get!(client, "http://perdu.com", headers: [{"cache-control", "no-cach
 
 ```
 
+## Middleware order
+
+`http_cache` only caches iodata bodies. As a consequence, beware of not decoding the body before
+caching. For instance, do not:
+
+```elixir
+defp client(token) do
+  Tesla.client([
+    Tesla.Middleware.Logger,
+    {Tesla.Middleware.BearerAuth, token: token},
+    {TeslaHTTPCache, %{store: :http_cache_store_memory}},
+    Tesla.Middleware.JSON # <- WRONG!!!
+  ])
+end
+```
+
+as the JSON will be decoded before caching, and the body wil be a map (not cacheable). Instead do:
+
+```elixir
+defp client(token) do
+  Tesla.client([
+    Tesla.Middleware.Logger,
+    {Tesla.Middleware.BearerAuth, token: token},
+    Tesla.Middleware.JSON,
+    {TeslaHTTPCache, %{store: :http_cache_store_memory}}
+  ])
+end
+```
+
+Response will be cached first then decoded.
+
 ## Telemetry events
 
 The following events are emitted:
