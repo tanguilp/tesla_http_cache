@@ -53,6 +53,21 @@ defmodule TeslaHTTPCacheTest do
     assert List.keymember?(env.headers, "age", 0)
   end
 
+  test "handles query parameters", %{client: client} do
+    {:ok, _} =
+      :http_cache.cache(
+        {"GET", Tesla.build_url(@test_url, param: "value"), [], ""},
+        @test_resp,
+        @http_cache_opts
+      )
+
+    {:ok, env} = Tesla.get(client, @test_url, query: [param: "value"])
+    assert List.keymember?(env.headers, "age", 0)
+
+    {:ok, env} = Tesla.get(client, @test_url, query: [param: "another-value"])
+    refute List.keymember?(env.headers, "age", 0)
+  end
+
   test "returns response stored in file", %{client: client} do
     :http_cache_store_process.save_in_file()
     {:ok, _} = :http_cache.cache(@test_req, @test_resp, @http_cache_opts)

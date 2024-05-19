@@ -190,7 +190,7 @@ defmodule TeslaHTTPCache do
   defp to_http_cache_request(env) do
     {
       env.method |> to_string() |> String.upcase(),
-      env.url,
+      Tesla.build_url(env.url, env.query),
       env.headers,
       (env.body || "") |> :erlang.iolist_to_binary()
     }
