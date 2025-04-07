@@ -44,6 +44,8 @@ defmodule TeslaHTTPCacheTest do
   end
 
   test "returns cached response", %{client: client} do
+    ref = :telemetry_test.attach_event_handlers(self(), [[:tesla_http_cache, :hit]])
+
     {:ok, _} = :http_cache.cache(@test_req, @test_resp, @http_cache_opts)
 
     {:ok, env} = Tesla.get(client, @test_url)
@@ -51,6 +53,7 @@ defmodule TeslaHTTPCacheTest do
     assert env.status == 200
     assert env.body == "Some content"
     assert List.keymember?(env.headers, "age", 0)
+    assert_received {[:tesla_http_cache, :hit], ^ref, _, %{freshness: :fresh, env: %Tesla.Env{}}}
   end
 
   test "handles query parameters", %{client: client} do
@@ -91,6 +94,8 @@ defmodule TeslaHTTPCacheTest do
   end
 
   test "returns cached response when cache is disconnected" do
+    ref = :telemetry_test.attach_event_handlers(self(), [[:tesla_http_cache, :hit]])
+
     client =
       Tesla.client(
         [{TeslaHTTPCache, %{store: :http_cache_store_process}}],
@@ -109,10 +114,13 @@ defmodule TeslaHTTPCacheTest do
     assert env.status == 200
     assert env.body == "Some content"
     assert List.keymember?(env.headers, "age", 0)
+    assert_received {[:tesla_http_cache, :hit], ^ref, _, %{freshness: :stale, env: %Tesla.Env{}}}
   end
 
   for http_status <- [500, 502, 503, 504] do
     test "returns cached response when origin returns a #{http_status} error" do
+      ref = :telemetry_test.attach_event_handlers(self(), [[:tesla_http_cache, :hit]])
+
       client =
         Tesla.client(
           [{TeslaHTTPCache, %{store: :http_cache_store_process}}],
@@ -131,6 +139,9 @@ defmodule TeslaHTTPCacheTest do
       assert env.status == 200
       assert env.body == "Some content"
       assert List.keymember?(env.headers, "age", 0)
+
+      assert_received {[:tesla_http_cache, :hit], ^ref, _,
+                       %{freshness: :stale, env: %Tesla.Env{}}}
     end
   end
 

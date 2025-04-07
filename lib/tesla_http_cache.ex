@@ -51,7 +51,7 @@ defmodule TeslaHTTPCache do
         revalidate(request, response, env, next, opts)
 
       :miss ->
-        :telemetry.execute([:tesla_http_cache, :miss], %{})
+        :telemetry.execute([:tesla_http_cache, :miss], %{env: env})
 
         :http_cache.notify_downloading(request, self(), opts)
 
@@ -121,7 +121,7 @@ defmodule TeslaHTTPCache do
          _req_env,
          opts
        ) do
-    :telemetry.execute([:tesla_http_cache, :hit], %{}, %{freshness: :revalidated})
+    :telemetry.execute([:tesla_http_cache, :hit], %{}, %{freshness: :revalidated, env: resp_env})
 
     case :http_cache.cache(
            http_cache_req,
@@ -182,7 +182,7 @@ defmodule TeslaHTTPCache do
 
   defp return_cached_response({freshness, {response_ref, response}}, env, opts) do
     :http_cache.notify_response_used(response_ref, opts)
-    :telemetry.execute([:tesla_http_cache, :hit], %{}, %{freshness: freshness})
+    :telemetry.execute([:tesla_http_cache, :hit], %{}, %{freshness: freshness, env: env})
 
     {:ok, to_tesla_response(env, response)}
   end
