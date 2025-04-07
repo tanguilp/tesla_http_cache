@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
+## [0.3.2] - 2025-04-07
+
+### Added
+
+- [`TeslaHTTPCache`] Telemetry events now send the `%Tesla.Env{}` as part of the metadata
+
 ## [0.3.1] - 2024-05-19
 
 ### Fixed
