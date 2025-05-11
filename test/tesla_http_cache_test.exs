@@ -130,11 +130,12 @@ defmodule TeslaHTTPCacheTest do
       {:ok, _} =
         :http_cache.cache(
           @test_req,
-          {200, [{"cache-control", "max-age=0, stale-if-error=600"}], "Some content"},
+          {200, [{"cache-control", "max-age=0"}], "Some content"},
           @http_cache_opts
         )
 
-      {:ok, env} = Tesla.get(client, @test_url)
+      {:ok, env} =
+        Tesla.get(client, @test_url, headers: [{"cache-control", "stale-if-error=3600"}])
 
       assert env.status == 200
       assert env.body == "Some content"
