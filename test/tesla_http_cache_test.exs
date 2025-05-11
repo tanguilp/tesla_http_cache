@@ -93,7 +93,7 @@ defmodule TeslaHTTPCacheTest do
     assert List.keymember?(env.headers, "age", 0)
   end
 
-  test "returns cached response when cache is disconnected" do
+  test "returns cached response when cache is disconnected and stale-if-error configured" do
     ref = :telemetry_test.attach_event_handlers(self(), [[:tesla_http_cache, :hit]])
 
     client =
@@ -105,7 +105,7 @@ defmodule TeslaHTTPCacheTest do
     {:ok, _} =
       :http_cache.cache(
         @test_req,
-        {200, [{"cache-control", "max-age=0"}], "Some content"},
+        {200, [{"cache-control", "max-age=0, stale-if-error=3600"}], "Some content"},
         @http_cache_opts
       )
 
