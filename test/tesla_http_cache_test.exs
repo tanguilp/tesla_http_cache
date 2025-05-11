@@ -1,7 +1,11 @@
 defmodule TeslaHTTPCacheTest do
   use ExUnit.Case
 
-  @http_cache_opts %{type: :private, store: :http_cache_store_process}
+  @http_cache_opts %{
+    type: :private,
+    store: :http_cache_store_process,
+    stale_while_revalidate_supported: true
+  }
   @test_url "http://no-exist-domain-adsxikfgjs.com"
   @test_req {"GET", @test_url, [], ""}
   @test_resp {200, [], "Some content"}
@@ -11,6 +15,7 @@ defmodule TeslaHTTPCacheTest do
 
     @impl true
     def call(env, _opts) do
+      send(env.opts[:caller], {:adapter_called, __MODULE__})
       {:ok, env}
     end
   end
@@ -36,7 +41,10 @@ defmodule TeslaHTTPCacheTest do
   setup do
     client =
       Tesla.client(
-        [{TeslaHTTPCache, %{store: :http_cache_store_process}}],
+        [
+          {Tesla.Middleware.Opts, [caller: self()]},
+          {TeslaHTTPCache, %{store: :http_cache_store_process}}
+        ],
         __MODULE__.EchoAdapter
       )
 
@@ -177,5 +185,22 @@ defmodule TeslaHTTPCacheTest do
     {:ok, env} = Tesla.get(client, @test_url)
 
     assert List.keymember?(env.headers, "if-modified-since", 0)
+  end
+
+  test "revalidates asynchronously with `stale-while-revalidate`", %{client: client} do
+    {:ok, _} =
+      :http_cache.cache(
+        @test_req,
+        {200, [{"cache-control", "max-age=0, stale-while-revalidate=60"}], "Some content"},
+        @http_cache_opts
+      )
+
+    {:ok, env} = Tesla.get(client, @test_url)
+
+    assert env.status == 200
+    assert env.body == "Some content"
+    assert List.keymember?(env.headers, "age", 0)
+
+    assert_receive {:adapter_called, _}
   end
 end

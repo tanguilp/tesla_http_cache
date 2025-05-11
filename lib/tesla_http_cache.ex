@@ -7,7 +7,12 @@ defmodule TeslaHTTPCache do
 
   @behaviour Tesla.Middleware
 
-  @default_opts %{auto_accept_encoding: true, auto_compress: true, type: :private}
+  @default_opts %{
+    auto_accept_encoding: true,
+    auto_compress: true,
+    type: :private,
+    stale_while_revalidate_supported: true
+  }
 
   defmodule InvalidBodyError do
     @moduledoc """
@@ -42,6 +47,10 @@ defmodule TeslaHTTPCache do
         return_cached_response(response, env, opts)
 
       {:stale, _} = response ->
+        if revalidate_stale_response?(response, opts) do
+          Task.start(fn -> revalidate(request, response, env, next, opts) end)
+        end
+
         return_cached_response(response, env, opts)
 
       {:must_revalidate, _} = response ->
@@ -206,6 +215,20 @@ defmodule TeslaHTTPCache do
       nil ->
         env
     end
+  end
+
+  defp revalidate_stale_response?(response, opts) do
+    {:stale, {_resp_ref, {_status, headers, _body}}} = response
+
+    # In theory we could erroneously revalidate a response with an expired timeout in
+    # `stale-while-revalidate` if the `max-stale` is used as well and as a greater duration.
+    # In practice this is deemed good enough™ for now
+
+    opts[:stale_while_revalidate_supported] == true and
+      Enum.any?(headers, fn {name, value} ->
+        String.downcase(name) == "cache-control" and
+          String.contains?(value, "stale-while-revalidate=")
+      end)
   end
 
   defp init_opts(%{store: _} = opts) do
