@@ -6,6 +6,10 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 
 ## [0.4.0] - XXXX-XX-XX
 
+### Added
+
+- [`TeslaHTTPCache`] `stale-while-revalidate` is now supported
+
 ### Changed
 
 - [`TeslaHTTPCache`] Error handling was modified and `TeslaHTTPCache` now always tries to find
