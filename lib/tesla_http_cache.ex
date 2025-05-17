@@ -7,8 +7,12 @@ defmodule TeslaHTTPCache do
 
   @behaviour Tesla.Middleware
 
-  @default_opts %{auto_accept_encoding: true, auto_compress: true, type: :private}
-  @stale_if_error_status [500, 502, 503, 504]
+  @default_opts %{
+    auto_accept_encoding: true,
+    auto_compress: true,
+    type: :private,
+    stale_while_revalidate_supported: true
+  }
 
   defmodule InvalidBodyError do
     @moduledoc """
@@ -43,6 +47,10 @@ defmodule TeslaHTTPCache do
         return_cached_response(response, env, opts)
 
       {:stale, _} = response ->
+        if revalidate_stale_response?(response, opts) do
+          Task.start(fn -> revalidate(request, response, env, next, opts) end)
+        end
+
         return_cached_response(response, env, opts)
 
       {:must_revalidate, _} = response ->
@@ -88,33 +96,6 @@ defmodule TeslaHTTPCache do
   defp handle_response(result, http_cache_req, http_cache_revalidated_resp \\ nil, req_env, opts)
 
   defp handle_response(
-         {:ok, %Tesla.Env{status: status} = resp_env},
-         http_cache_req,
-         _http_cache_revalidated_resp,
-         _req_env,
-         opts
-       )
-       when status in @stale_if_error_status do
-    # We always cache even responses we do know are uncacheable because this can
-    # have side effects, such as invalidating or reseting request collapsing
-    http_cache_resp = to_http_cache_response(resp_env)
-    :http_cache.cache(http_cache_req, http_cache_resp, opts)
-
-    opts = Map.put(opts, :allow_stale_if_error, true)
-
-    case :http_cache.get(http_cache_req, opts) do
-      {:fresh, _} = http_cache_resp ->
-        return_cached_response(http_cache_resp, resp_env, opts)
-
-      {:stale, _} = http_cache_resp ->
-        return_cached_response(http_cache_resp, resp_env, opts)
-
-      _ ->
-        {:ok, resp_env}
-    end
-  end
-
-  defp handle_response(
          {:ok, %Tesla.Env{status: 304} = resp_env},
          http_cache_req,
          http_cache_revalidated_resp,
@@ -148,35 +129,28 @@ defmodule TeslaHTTPCache do
       {:ok, http_cache_resp} ->
         {:ok, to_tesla_response(resp_env, http_cache_resp)}
 
+      {:not_cacheable, {response_ref, response}} ->
+        return_cached_response({:stale, {response_ref, response}}, resp_env, opts)
+
       :not_cacheable ->
         {:ok, resp_env}
     end
   end
 
   defp handle_response(
-         {:error, reason} = error,
+         {:error, _reason} = error,
          http_cache_req,
          _http_cache_revalidated_resp,
          req_env,
          opts
        ) do
-    :http_cache.cache(http_cache_req, {504, [], ""}, opts)
+    case :http_cache.cache(http_cache_req, {502, [], ""}, opts) do
+      # stale-if-error case
+      {:not_cacheable, {response_ref, response}} ->
+        return_cached_response({:stale, {response_ref, response}}, req_env, opts)
 
-    if origin_unreachable?(reason) do
-      opts = Map.put(opts, :origin_unreachable, true)
-
-      case :http_cache.get(http_cache_req, opts) do
-        {:fresh, _} = http_cache_resp ->
-          return_cached_response(http_cache_resp, req_env, opts)
-
-        {:stale, _} = http_cache_resp ->
-          return_cached_response(http_cache_resp, req_env, opts)
-
-        _ ->
-          error
-      end
-    else
-      error
+      :not_cacheable ->
+        error
     end
   end
 
@@ -243,15 +217,19 @@ defmodule TeslaHTTPCache do
     end
   end
 
-  # Erlang httpc
-  defp origin_unreachable?(:econnrefused), do: true
-  # Gun & hackney
-  defp origin_unreachable?(:timeout), do: true
-  # ibrowse
-  defp origin_unreachable?(:nxdomain), do: true
-  # Mint & Finch
-  defp origin_unreachable?(%{__exception__: true, __struct__: Mint.TransportError}), do: false
-  defp origin_unreachable?(_), do: false
+  defp revalidate_stale_response?(response, opts) do
+    {:stale, {_resp_ref, {_status, headers, _body}}} = response
+
+    # In theory we could erroneously revalidate a response with an expired timeout in
+    # `stale-while-revalidate` if the `max-stale` is used as well and as a greater duration.
+    # In practice this is deemed good enough™ for now
+
+    opts[:stale_while_revalidate_supported] == true and
+      Enum.any?(headers, fn {name, value} ->
+        String.downcase(name) == "cache-control" and
+          String.contains?(value, "stale-while-revalidate=")
+      end)
+  end
 
   defp init_opts(%{store: _} = opts) do
     Map.merge(@default_opts, opts)

@@ -7,8 +7,8 @@ HTTP caching middleware for Tesla
 ```elixir
 def deps do
   [
-    {:http_cache, "~> 0.3.1"},
-    {:tesla_http_cache, "~> 0.3.0"}
+    {:http_cache, "~> 0.4.0"},
+    {:tesla_http_cache, "~> 0.4.0"}
   ]
 end
 ```
@@ -218,6 +218,39 @@ end
 ```
 
 Response will be cached first then decoded.
+
+## Error handling
+
+Whenever an error occurs when requesting a URL, `TeslaHTTPCache` tries to find and return a response
+observing the `stale-if-error` cache control directive.
+
+This occurs when:
+- the result HTTP code is one of `500`, `502`, `503` or `504` (as per
+[RFC5861 - HTTP Cache-Control Extensions for Stale Content](https://datatracker.ietf.org/doc/html/rfc5861#section-4))
+- the result is an error, for instance `{:error, :econnrefused}`
+
+If the origin doesn't set this header and you want to always fallback to a cached response in case
+of origin error or unreachability, you need to either:
+- manually set the `stale-if-error` *response* directive before caching (writing a custom
+middleware), or
+- add the `stale-if-error` *request* directive to your requests:
+
+```elixir
+defp client(token) do
+  Tesla.client([
+    Tesla.Middleware.Logger,
+    {Tesla.Middleware.BearerAuth, token: token},
+    Tesla.Middleware.JSON,
+    {Tesla.Middleware.Headers, [{"cache-control", "stale-if-error=3600"}]},
+    {TeslaHTTPCache, %{store: :http_cache_store_memory}}
+  ])
+end
+```
+
+Note that when using the *request* `stale-if-error` directive, the cache has no clue how long to
+store the response after it expires (in *stale* state) and might delete it before you expected.
+See `http_cache` [`default_grace` option](https://hexdocs.pm/http_cache/http_cache.html#t:opts/0) to
+fine tune this behaviour.
 
 ## Telemetry events
 
