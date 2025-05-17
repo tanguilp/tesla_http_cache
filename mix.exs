@@ -5,7 +5,7 @@ defmodule TeslaHTTPCache.MixProject do
     [
       app: :tesla_http_cache,
       description: "HTTP caching middleware for Tesla",
-      version: "0.3.2",
+      version: "0.4.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
