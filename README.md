@@ -7,8 +7,8 @@ HTTP caching middleware for Tesla
 ```elixir
 def deps do
   [
-    {:http_cache, "~> 0.4.0"},
-    {:tesla_http_cache, "~> 0.4.0"}
+    {:http_cache, "~> 1.0"},
+    {:tesla_http_cache, "~> 1.0"}
   ]
 end
 ```
