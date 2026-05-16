@@ -33,7 +33,7 @@ defmodule TeslaHTTPCacheTest do
     @behaviour Tesla.Adapter
 
     @impl true
-    def call(env, http_status) do
+    def call(%Tesla.Env{} = env, http_status) do
       {:ok, %Tesla.Env{env | status: http_status}}
     end
   end

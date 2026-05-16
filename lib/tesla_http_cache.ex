@@ -190,7 +190,10 @@ defmodule TeslaHTTPCache do
     to_tesla_response(env, {status, resp_headers, {:sendfile, offset, file_size, path}})
   end
 
-  defp to_tesla_response(env, {status, resp_headers, {:sendfile, offset, length, path}}) do
+  defp to_tesla_response(
+         %Tesla.Env{} = env,
+         {status, resp_headers, {:sendfile, offset, length, path}}
+       ) do
     file = File.open!(path, [:read, :raw, :binary])
 
     try do
@@ -201,7 +204,7 @@ defmodule TeslaHTTPCache do
     end
   end
 
-  defp to_tesla_response(env, {status, resp_headers, body}) do
+  defp to_tesla_response(%Tesla.Env{} = env, {status, resp_headers, body}) do
     %Tesla.Env{env | status: status, headers: resp_headers, body: :erlang.iolist_to_binary(body)}
   end
 
